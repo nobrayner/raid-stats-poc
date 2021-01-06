@@ -61,4 +61,10 @@ declare module '*.png' {
   export default ref;
 }
 
+/* SVELTE */
+declare module '*.svelte' {
+  const value: any
+  export default value
+}
+
 /* CUSTOM: ADD YOUR OWN HERE */
