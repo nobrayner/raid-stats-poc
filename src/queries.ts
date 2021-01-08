@@ -1,4 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request'
+import { getStatsFromCommits } from './utils'
 
 const client = new GraphQLClient('https://api.github.com/graphql', {
   headers: {
@@ -30,8 +31,8 @@ export const getRepoDetails = async () => {
   return result.repository.pullRequest as PullStats
 }
 
-export const getAllCommitsSince = async(since: string, after?: string) => {
-  const result = await client.request(
+export const getAllUserStatsSince = async(since: string, after: string | null): Promise<Commit[]> => {
+  const result: CommitResult = (await client.request(
     gql`
     query commits($since: GitTimestamp!, $repo: String!, $owner: String!) {
       repository(name: $repo, owner: $owner) {
@@ -74,9 +75,7 @@ export const getAllCommitsSince = async(since: string, after?: string) => {
       repo: 'hospitalrun-frontend',
       owner: 'kcdraidgroup'
     }
-  )
+  )).repository.defaultBranchRef.target.history
 
-  console.log(result)
-
-  return result.repository.defaultBranchRef.target.history as CommitResult
+  return result.pageInfo.hasNextPage ? [...result.nodes, ...(await getAllUserStatsSince(since, result.pageInfo.endCursor))] : result.nodes
 }

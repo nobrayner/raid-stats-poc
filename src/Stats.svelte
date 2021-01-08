@@ -1,23 +1,23 @@
 <script lang='ts'>
   import { useQuery } from '@sveltestack/svelte-query'
-  import { getRepoDetails, getAllCommitsSince } from './queries'
+  import { getRepoDetails, getAllUserStatsSince } from './queries'
   import { getStatsFromCommits } from './utils'
 
   const repoDetails = useQuery<PullStats, Error>('prDetails', getRepoDetails)
   let createdAt: string
   $: createdAt = $repoDetails.data?.createdAt as string
 
-  const commitResults = useQuery<CommitResult, Error>(
+  const commits = useQuery<Commit[], Error>(
     ['commits', createdAt],
-    () => getAllCommitsSince(createdAt),
+    () => getAllUserStatsSince(createdAt, null),
     {
       enabled: !!createdAt
     }
   )
   $: {
-    commitResults.setOptions(
+    commits.setOptions(
       ['commits', createdAt],
-      () => getAllCommitsSince(createdAt),
+      () => getAllUserStatsSince(createdAt, null),
       {
         enabled: !!createdAt
       }
@@ -25,8 +25,19 @@
   }
 
   let userStats: UserStats[]
-  $: userStats = getStatsFromCommits($commitResults.data?.nodes)
+  $: userStats = getStatsFromCommits($commits.data)
 </script>
+
+<style>
+  article {
+    margin-top: 1rem;
+  }
+
+  #user-stats {
+    overflow-y: auto;
+    height: 80rem;
+  }
+</style>
 
 {#if $repoDetails.isLoading}
   <p>Loading...</p>
@@ -39,14 +50,23 @@
 {/if}
 
 
-{#if $commitResults.isIdle}
+{#if $commits.isIdle}
   <p>Waiting...</p>
-{:else if $commitResults.isLoading}
+{:else if $commits.error}
+  <p>{$commits.error?.message}</p>
+{:else if $commits.isLoading}
   <p>Loading...</p>
-{:else if $commitResults.error}
-  <p>{$commitResults.error?.message}</p>
 {:else}
-  {#each userStats ?? [] as userStat  (userStat.user)}
-    <p>{userStat.user}</p>
-  {/each}
+  <div id="user-stats">
+    {#each userStats ?? [] as userStat (userStat.user)}
+      <article>
+        <p>{userStat.user}</p>
+        <p>Additions: {userStat.additions}</p>
+        <p>Deletions: {userStat.deletions}</p>
+        <p>Net &nbsp; Dels: {userStat.netDeletions}</p>
+        <p>Mod Files: {userStat.changedFiles}</p>
+        <p># Commits: {userStat.commits}</p>
+      </article>
+    {/each}
+  </div>
 {/if}
