@@ -1,15 +1,21 @@
 <script lang='ts'>
   import { useQuery } from '@sveltestack/svelte-query'
-  import { getRepoDetails, getAllUserStatsSince } from './queries'
+  import { getRepoDetails, getAllUserStatsFromRepoSince } from './queries'
   import { getStatsFromCommits } from './utils'
 
-  const repoDetails = useQuery<PullStats, Error>('prDetails', getRepoDetails)
+  const originalOwner = 'hospitalrun'
+  const prId = 2516
+
+  const raidRepoOwner = 'kcdraidgroup'
+  const raidRepo = 'hospitalrun-frontend'
+
+  const repoDetails = useQuery<PullStats, Error>('prDetails', () => getRepoDetails(originalOwner, raidRepo, prId))
   let createdAt: string
   $: createdAt = $repoDetails.data?.createdAt as string
 
   const commits = useQuery<Commit[], Error>(
     ['commits', createdAt],
-    () => getAllUserStatsSince(createdAt, null),
+    () => getAllUserStatsFromRepoSince(raidRepoOwner, raidRepo, createdAt, null),
     {
       enabled: !!createdAt
     }
@@ -17,7 +23,7 @@
   $: {
     commits.setOptions(
       ['commits', createdAt],
-      () => getAllUserStatsSince(createdAt, null),
+      () => getAllUserStatsFromRepoSince(raidRepoOwner, raidRepo, createdAt, null),
       {
         enabled: !!createdAt
       }
@@ -25,7 +31,7 @@
   }
 
   let userStats: UserStats[]
-  $: userStats = getStatsFromCommits($commits.data)
+  $: userStats = getStatsFromCommits(`${raidRepoOwner}/${raidRepo}`, $commits.data)
 </script>
 
 <style>
@@ -47,6 +53,7 @@
   <p>Adds: {$repoDetails.data?.additions}</p>
   <p>Dels: {$repoDetails.data?.deletions}</p>
   <p>Files: {$repoDetails.data?.changedFiles}</p>
+  <p>Created: {$repoDetails.data?.createdAt}</p>
 {/if}
 
 
@@ -58,13 +65,12 @@
   <p>Loading...</p>
 {:else}
   <div id="user-stats">
-    {#each userStats ?? [] as userStat (userStat.user)}
+    {#each userStats ?? [] as userStat, index (userStat.user)}
       <article>
-        <p>{userStat.user}</p>
+        <p>#{index + 1} {userStat.user}</p>
         <p>Additions: {userStat.additions}</p>
         <p>Deletions: {userStat.deletions}</p>
         <p>Net &nbsp; Dels: {userStat.netDeletions}</p>
-        <p>Mod Files: {userStat.changedFiles}</p>
         <p># Commits: {userStat.commits}</p>
       </article>
     {/each}

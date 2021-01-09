@@ -3,6 +3,5 @@ interface UserStats {
   additions: number
   deletions: number
   netDeletions: number
-  changedFiles: number
   commits: number
 }

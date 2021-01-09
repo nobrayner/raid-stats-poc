@@ -14,21 +14,19 @@ interface CommitResult {
 }
 
 interface Commit {
-  abbreviatedOid: string
+  oid: string
+  message: string
   author: {
     user: {
       login: string
     }
   }
+  repository: {
+    nameWithOwner: string
+  }
   additions: number
   deletions: number
-  changedFiles: number
   parents: {
     totalCount: number
-    nodes: {
-      repository: {
-        nameWithOwner: string
-      }
-    }[]
   }
 }

@@ -1,5 +1,4 @@
 import { GraphQLClient, gql } from 'graphql-request'
-import { getStatsFromCommits } from './utils'
 
 const client = new GraphQLClient('https://api.github.com/graphql', {
   headers: {
@@ -7,11 +6,11 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
   }
 })
 
-export const getRepoDetails = async () => {
+export const getRepoDetails = async (owner: string, repo: string, prid: number) => {
   const result = await client.request(
     gql`
-      query pr($name: String!, $owner: String!, $prid: Int!) {
-        repository(name: $name, owner: $owner) {
+      query pr($repo: String!, $owner: String!, $prid: Int!) {
+        repository(name: $repo, owner: $owner) {
           pullRequest(number: $prid) {
             createdAt
             additions
@@ -22,16 +21,16 @@ export const getRepoDetails = async () => {
       }
     `,
     {
-      name: 'hospitalrun-frontend',
-      owner: 'hospitalrun',
-      prid: 2516,
+      repo,
+      owner,
+      prid,
     }
   )
 
   return result.repository.pullRequest as PullStats
 }
 
-export const getAllUserStatsSince = async(since: string, after: string | null): Promise<Commit[]> => {
+export const getAllUserStatsFromRepoSince = async(owner: string, repo: string, since: string, after: string | null): Promise<Commit[]> => {
   const result: CommitResult = (await client.request(
     gql`
     query commits($since: GitTimestamp!, $repo: String!, $owner: String!) {
@@ -45,22 +44,20 @@ export const getAllUserStatsSince = async(since: string, after: string | null): 
                   endCursor
                 }
                 nodes {
-                  abbreviatedOid
+                  oid
+                  message
                   author {
                     user {
                       login
                     }
                   }
+                  repository {
+                    nameWithOwner
+                  }
                   additions
                   deletions
-                  changedFiles
-                  parents(first: 10) {
+                  parents {
                     totalCount
-                    nodes {
-                      repository {
-                        nameWithOwner
-                      }
-                    }
                   }
                 }
               }
@@ -72,10 +69,10 @@ export const getAllUserStatsSince = async(since: string, after: string | null): 
     `,
     {
       since,
-      repo: 'hospitalrun-frontend',
-      owner: 'kcdraidgroup'
+      repo,
+      owner,
     }
   )).repository.defaultBranchRef.target.history
 
-  return result.pageInfo.hasNextPage ? [...result.nodes, ...(await getAllUserStatsSince(since, result.pageInfo.endCursor))] : result.nodes
+  return result.pageInfo.hasNextPage ? [...result.nodes, ...(await getAllUserStatsFromRepoSince(owner, repo, since, result.pageInfo.endCursor))] : result.nodes
 }
