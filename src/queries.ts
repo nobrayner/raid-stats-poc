@@ -16,6 +16,9 @@ export const getRepoDetails = async (owner: string, repo: string, prid: number) 
             additions
             deletions
             changedFiles
+            commits {
+              totalCount
+            }
           }
         }
       }
@@ -46,18 +49,26 @@ export const getAllUserStatsFromRepoSince = async(owner: string, repo: string, s
                 nodes {
                   oid
                   message
+                  additions
+                  deletions
                   author {
                     user {
+                      avatarUrl
                       login
                     }
                   }
-                  repository {
-                    nameWithOwner
-                  }
-                  additions
-                  deletions
                   parents {
                     totalCount
+                  }
+                  associatedPullRequests(first: 100) {
+                    totalCount
+                    nodes {
+                      baseRef {
+                        repository {
+                          nameWithOwner
+                        }
+                      }
+                    }
                   }
                 }
               }

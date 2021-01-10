@@ -3,6 +3,9 @@ interface PullStats {
   additions: number
   deletions: number
   changedFiles: number
+  commits: {
+    totalCount: number
+  }
 }
 
 interface CommitResult {
@@ -15,18 +18,25 @@ interface CommitResult {
 
 interface Commit {
   oid: string
-  message: string
+  additions: number
+  deletions: number
   author: {
     user: {
+      avatarUrl: string
       login: string
     }
   }
-  repository: {
-    nameWithOwner: string
-  }
-  additions: number
-  deletions: number
   parents: {
+    totalCount
+  }
+  associatedPullRequests: {
     totalCount: number
+    nodes: {
+      baseRef: {
+        repository: {
+          nameWithOwner: string
+        }
+      }
+    }[]
   }
 }

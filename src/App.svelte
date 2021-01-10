@@ -1,6 +1,6 @@
 <script lang='ts'>
 	import { QueryClientProvider, QueryClient } from '@sveltestack/svelte-query'
-	import Stats from './Stats.svelte'
+	import StatsView from './StatsView.svelte'
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
@@ -12,6 +12,6 @@
 </script>
 
 <QueryClientProvider>
-	<Stats />
+	<StatsView />
 </QueryClientProvider>
   
