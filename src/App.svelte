@@ -1,17 +1,16 @@
 <script lang='ts'>
-	import { QueryClientProvider, QueryClient } from '@sveltestack/svelte-query'
+	import { QueryClientProvider } from '@sveltestack/svelte-query'
 	import StatsView from './StatsView.svelte'
 
-	const queryClient = new QueryClient({
-		defaultOptions: {
-			queries: {
-				retry: false,
-			}
-		}
-	})
+	const raidDetials = {
+		originalOwner: 'hospitalrun',
+		raidRepoOwner: 'kcdraidgroup',
+		raidRepo: 'hospitalrun-frontend',
+		prId: 2516,
+	}
 </script>
 
 <QueryClientProvider>
-	<StatsView />
+	<StatsView {...raidDetials} />
 </QueryClientProvider>
   

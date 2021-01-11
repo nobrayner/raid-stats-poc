@@ -4,6 +4,7 @@
 /* Fix HMR */
 declare interface ImportMeta {
   hot: any
+  env: { [key: string]: any }
 }
 
 /* CSS MODULES */

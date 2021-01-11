@@ -3,11 +3,10 @@
   import { getRepoDetails, getAllUserStatsFromRepoSince } from './queries'
   import { getStatsFromCommits } from './utils'
 
-  const originalOwner = 'hospitalrun'
-  const prId = 2516
-
-  const raidRepoOwner = 'kcdraidgroup'
-  const raidRepo = 'hospitalrun-frontend'
+  export let originalOwner: string
+  export let prId: number
+  export let raidRepoOwner: string
+  export let raidRepo: string
 
   const repoDetails = useQuery<PullStats, Error>('prDetails', () => getRepoDetails(originalOwner, raidRepo, prId))
   let createdAt: string
@@ -30,35 +29,87 @@
     )
   }
 
+  const userStatSorts: { [key: string]: (a: UserStats, b:UserStats) => number } = {
+    'commits': (a, b) => b.commits - a.commits,
+    'additions': (a, b) => b.additions - a.additions,
+    'deletions': (a, b) => b.deletions - a.deletions,
+  }
+  const userStatSortNames = Object.keys(userStatSorts)
+
+  let currentSort = userStatSortNames[0]
+
   let userStats: UserStats[]
-  $: userStats = getStatsFromCommits(`${raidRepoOwner}/${raidRepo}`, $commits.data)
+  $: userStats = getStatsFromCommits(`${raidRepoOwner}/${raidRepo}`, $commits.data).sort(userStatSorts[currentSort])
 </script>
 
 <style>
   #stats-view {
-    --padding-amount: 1rem;
-    max-width: 700px;
-    height: calc(100vh - (2 * var(--padding-amount)));
-    padding: var(--padding-amount);
-    margin: 0 auto;
+    height: 100vh;
     display: grid;
     grid-template-rows: auto 1fr;
-    grid-row-gap: 2rem;
+  }
+  #stats-view > * {
+    padding: 1rem;
+  }
+  
+  header {
+    z-index: 1;
+    background-color: white;
+    border-bottom: 1px solid hsl(0, 0%, 78%);
+    box-shadow: 0 2px 4px 0 hsla(0, 0%, 0%, 10%);
+  }
+  header > .content {
+    margin: 0 auto;
+    width: 700px;
   }
 
-  article {
+  h1 {
+    font-size: 3rem;
+    line-height: 3rem;
+    margin-bottom: 2rem;
+  }
+
+  .total-stats {
+    display: flex;
+    direction: row;
+  }
+  .total-stats > :first-child {
+    width: 23.5rem;
+  }
+  .total-stats > :not(:first-child) {
+    margin-left: 2rem;
+  }
+
+  select {
+    margin-top: 2rem;
+    border: none;
+    background-color: inherit;
+    font-size: 1em;
+    text-transform: capitalize;
+  }
+
+  /* MAIN DATA */  
+  .stat-container {
+    overflow-y: auto;
+  }
+  .stat-container > * {
+    margin: 0 auto;
+    width: 700px;
+  }
+
+  .user-stat-block {
     background-color: white;
     border: 1px solid hsl(0, 0%, 78%);
     border-radius: 8px;
     padding: 1rem 2rem;
     display: grid;
     grid-gap: 2rem;
-    grid-template-columns: 3.75rem auto 8.365rem 3fr;
+    grid-template-columns: 3.75rem 6rem 8.365rem 3fr;
     grid-template-areas:
       "rank avatar name stats"
     ;
   }
-  article:not(:first-child) {
+  .user-stat-block:not(:first-child) {
     margin-top: 1rem;
   }
 
@@ -87,10 +138,6 @@
     align-self: center;
   }
 
-  #user-stats {
-    overflow-y: auto;
-  }
-
   .emoji-stat {
     font-size: 1.5rem;
     margin-right: 1rem;
@@ -104,40 +151,57 @@
 
 <main id="stats-view">
   <header>
-    {#if $repoDetails.isLoading}
-      <p>Loading...</p>
-    {:else if $repoDetails.error}
-      <p>{$repoDetails.error?.message}</p>
+    <div class="content">
+      <h1>{raidRepo}</h1>
+      {#if $repoDetails.isLoading}
+        <p>Loading...</p>
+      {:else if $repoDetails.error}
+        <p>{$repoDetails.error?.message}</p>
       {:else}
-      <p><span class="emoji-stat">🚀</span>{$commits.status === 'success' ? `${userStats.length} Contributors` : 'Loading...'}</p>
-      <p><span class="emoji-stat">⚔️</span>+{$repoDetails.data?.additions}&emsp;-{$repoDetails.data?.deletions}</p>
-      <p><span class="emoji-stat">🔥</span>{($repoDetails.data?.additions ?? 0) - ($repoDetails.data?.deletions ?? 0)} Net Deletions</p>
-      <p><span class="emoji-stat">📃</span>{$repoDetails.data?.changedFiles} Changed Files</p>
-      <p><span class="emoji-stat">💾</span>{$repoDetails.data?.commits.totalCount} {$repoDetails.data?.commits.totalCount === 1 ? 'Commit' : 'Commits'}</p>
-      <!-- <p>Created: {$repoDetails.data?.createdAt}</p> -->
-    {/if}
+        <div class="total-stats">
+          <div>
+            <p><span class="emoji-stat">🚀</span>{$commits.status === 'success' ? `${userStats.length} Contributors` : 'Loading...'}</p>
+            <p><span class="emoji-stat">💾</span>{$repoDetails.data?.commits.totalCount} {$repoDetails.data?.commits.totalCount === 1 ? 'Commit' : 'Commits'}</p>
+            <p><span class="emoji-stat">📃</span>{$repoDetails.data?.changedFiles} Changed Files</p>
+          </div>
+          <div>
+            <p><span class="emoji-stat">⚔️</span>+{$repoDetails.data?.additions}&emsp;-{$repoDetails.data?.deletions}</p>
+            <p><span class="emoji-stat">🔥</span>{($repoDetails.data?.additions ?? 0) - ($repoDetails.data?.deletions ?? 0)} Net Deletions</p>
+          </div>
+        </div>
+        <!-- <p>Created: {$repoDetails.data?.createdAt}</p> -->
+      {/if}
+      Sort by: <select bind:value={currentSort} disabled={$commits.status !== 'success'}>
+        {#each userStatSortNames as theSort}
+          <option value={theSort}>
+            {theSort}
+          </option>
+        {/each}
+      </select>
+    </div>
   </header>
   
-  {#if $commits.isIdle}
-    <p>Waiting...</p>
-  {:else if $commits.error}
-    <p>{$commits.error?.message}</p>
-  {:else if $commits.isLoading}
-    <p>Loading...</p>
-  {:else}
-    <div id="user-stats">
-      {#each userStats ?? [] as userStat, index (userStat.user)}
-        <article>
-          <p class="rank">#{index + 1}</p>
-          <img class="avatar" src="{userStat.avatarUrl}" alt="{userStat.user}'s Profile Image">
-          <p class="name">{userStat.user}</p>
-          <div class="stat-block">
-            <p><span class="emoji-stat-light">⚔️️️️️️</span>+{userStat.additions}&emsp;-{userStat.deletions}</p>
-            <p><span class="emoji-stat-light">🔥</span>{userStat.netDeletions} Net Deletions</p>
-            <p><span class="emoji-stat-light">💾</span>{userStat.commits} {userStat.commits === 1 ? 'Commit' : 'Commits'}</p>
-          </div>
-        </article>
-      {/each}
-    </div>
-  {/if}
+  <div class="stat-container">
+    {#if $commits.isIdle}
+      <p>Waiting...</p>
+    {:else if $commits.error}
+      <p>{$commits.error?.message}</p>
+    {:else if $commits.isLoading}
+      <p>Loading...</p>
+    {:else}
+      <ol id="stats">
+        {#each userStats ?? [] as userStat, index (userStat.user)}
+          <li class="user-stat-block">
+            <p class="rank">#{index + 1}</p>
+            <img class="avatar" src="{userStat.avatarUrl}" alt="{userStat.user}'s Profile Image">
+            <p class="name">{userStat.user}</p>
+            <div class="stat-block">
+              <p><span class="emoji-stat-light">⚔️️️️️️</span>+{userStat.additions}&emsp;-{userStat.deletions}</p>
+              <p><span class="emoji-stat-light">💾</span>{userStat.commits} {userStat.commits === 1 ? 'Commit' : 'Commits'}</p>
+            </div>
+          </li>
+        {/each}
+        </ol>
+    {/if}
+  </div>
 </main>

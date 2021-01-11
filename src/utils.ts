@@ -8,14 +8,13 @@ export const getStatsFromCommits = (raidRepoWithOwner: string, commits: Commit[]
           node => node.baseRef?.repository?.nameWithOwner !== raidRepoWithOwner
         ).length > 0 // Exclude commits from PRs not to the raid repo
     ) {
-      // if (commit.author.user?.login === 'JacobMGEvans') console.log(JSON.stringify(commit))
+      // console.log(JSON.stringify(commit))
       return stats
     }
 
     if (commit.author.user.login in stats) {
       stats[commit.author.user.login].additions += commit.additions
       stats[commit.author.user.login].deletions += commit.deletions
-      stats[commit.author.user.login].netDeletions += commit.additions - commit.deletions
       stats[commit.author.user.login].commits += 1
     } else {
       stats[commit.author.user.login] = {
@@ -23,7 +22,6 @@ export const getStatsFromCommits = (raidRepoWithOwner: string, commits: Commit[]
         avatarUrl: commit.author.user.avatarUrl,
         additions: commit.additions,
         deletions: commit.deletions,
-        netDeletions: commit.additions - commit.deletions,
         commits: 1,
       }
     }

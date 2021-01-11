@@ -3,6 +3,5 @@ interface UserStats {
   avatarUrl: string
   additions: number
   deletions: number
-  netDeletions: number
   commits: number
 }
